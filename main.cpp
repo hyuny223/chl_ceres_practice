@@ -267,7 +267,7 @@ auto visualization(const cv::Mat& image2, const auto& good2, const auto& project
     cv::cvtColor(image2, dst, cv::COLOR_GRAY2BGR);
     for(int i = 0; i < good2.size(); ++i)
     {
-        cv::circle(dst, good2[i], 2, cv::Scalar(0,0,255),3);
+        cv::circle(dst, good2[i], 10, cv::Scalar(0,0,255),3);
     }
     for(int i = 0; i < projected.size(); ++i)
     {
@@ -293,6 +293,8 @@ int main()
     auto [good1, good2] = match(image1,point1,desc1, image2,point2,desc2);
     auto [r_mat, t_mat] = computeEssentialMatrix(good1, good2);
     auto point_3d = computeTriangulation(r_mat, t_mat, good1, good2);
+    auto tmp = projection(r_mat, t_mat, point_3d);
+    visualization(image2, good2, tmp);
     auto [new_r, new_t] = optimization(r_mat, t_mat, good2, point_3d);
     auto projected = projection(new_r, new_t, point_3d);
     visualization(image2, good2, projected);
