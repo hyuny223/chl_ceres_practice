@@ -127,7 +127,7 @@ auto computeTriangulation(const cv::Mat& r_mat, const cv::Mat& t_mat, const auto
     for (int i = 0; i < point_4d.cols; i++) 
     {
         cv::Mat x = point_4d.col(i);
-        x /= x.ptr<double>(3)[0]; // 归一化
+        x /= x.ptr<double>(3)[0];
 
         cv::Point3d p(x.ptr<double>(0)[0], x.ptr<double>(1)[0], x.ptr<double>(2)[0]);
         point_3d.emplace_back(p);
@@ -233,9 +233,10 @@ auto optimization(const cv::Mat& r_mat, const cv::Mat& t_mat, const std::vector<
     }
 
     ceres::Solver::Options options;
-    // options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.trust_region_strategy_type = ceres::DOGLEG;
-    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+    // options.trust_region_strategy_type = ceres::DOGLEG;
+    // options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.linear_solver_type = ceres::SPARSE_SCHUR;
     options.max_num_iterations = 2000;
     options.update_state_every_iteration = true;
     options.minimizer_progress_to_stdout = true;

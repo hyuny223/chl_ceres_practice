@@ -1,3 +1,16 @@
+# chl_ceres_practice
+현재 모듈화를 진행하지는 않았습니다. main함수에 함수를 구현해 놓은 상태입니다.  
+
+detect : 특징점을 찾습니다.  
+match : 두 이미지에서 검출된 특징점의 디스크립터를 비교하여 매칭합니다.  
+computeEssentialMatrix : 매칭된 특징점으로 이미지간 Essential Matrix를 계산합니다.  
+pixel2cam : 픽셀 좌표를 카메라 좌표로 전환합니다.    
+computeTriangulation : 특징점과 R|t 매트릭스를 이용하여 삼각 측량을 수행합니다.   
+SnavelyReprojectionError : 최적화를 위한 클래스입니다. Ceres 라이브러리에 포함된 템플릿 입니다.  
+optimization : 최적화를 수행하는 함수입니다. 최적화된 R|t 매트릭스를 반환합니다.  
+projection : 3D 좌표를 2D 좌표로 투영합니다.  
+visualization : 결과를 OpenCV로 이미지화 합니다.  
+
 ## 22.09.08
 
 Red : detected points  
