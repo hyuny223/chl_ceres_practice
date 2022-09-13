@@ -40,7 +40,7 @@ struct SnavelyReprojectionError
     static ceres::CostFunction *Create(const double observed_x,
                                        const double observed_y)
     {
-        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 1, 9, 3, 3>(
+        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3, 3>(
             new SnavelyReprojectionError(observed_x, observed_y)));
     }
 
@@ -110,5 +110,6 @@ auto optimization(const cv::Mat &r_mat,
     new_r << R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7], R[8];
     new_t << t[0], t[1], t[2];
 
+   
     return std::tuple{new_r, new_t};
 }

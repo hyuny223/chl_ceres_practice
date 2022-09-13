@@ -209,8 +209,8 @@ auto visualization(const cv::Mat &image2, const auto &good2, const auto &project
     {
         cv::circle(dst, good2[i], 5, cv::Scalar(0, 0, 255), 3);
         cv::circle(dst, projected[i], 2, cv::Scalar(0, 255, 0), 3);
-        cv::imshow("result", dst);
     }
+    cv::imshow("result", dst);
     while (1)
     {
         if (cv::waitKey(0) == 27)
