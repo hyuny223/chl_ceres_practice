@@ -56,3 +56,25 @@ ceres-solver를 이용해서 최적화를 해보았다. 해당 이미지 상황�
 ```
 
 Three Views를 통해서 Optimization해보라는 의견에 구현을 하려고 보니(solvepnp를 사용하여), 결국엔 3D로 복원된 좌표와 마지막장에서 검출된 특징점과의 관계를 알아야만 solvepnp를 이용한 포즈 추정이 가능했다. 그래서 많은 SLAM들이 노드와 엣지를 구현하는 것 같다. 어떻게 구현해야할지...?
+
+## 22.09.13
+[ before optimization ]
+![image](https://user-images.githubusercontent.com/58837749/189782596-36041386-7621-4ae2-9247-870ba448efa9.png)  
+
+[ after optimization ]
+![image](https://user-images.githubusercontent.com/58837749/189782701-5f195eba-202f-4a4c-83cd-e257d3621aab.png)  
+
+이번에 사용한 방식은 solvePnPRANSAC이다.  
+1) 1번, 2번 이미지에서 SIFT를 이용하여 코너를 검출하고, 매칭을 시행한다.  
+2) 매칭점을 이용하여 Essential Matrix를 구한다.  
+3) 구한 E를 이용하여 R|t를 복원한다.  
+4) 복원한 R|t를 이용하여 Triangulation을 진행한다.  
+5) 이를 FramePoint로 만들어준다.  
+6) 이미 구해진 2번 이미지의 키포인트와, SIFT를 이용하여 구해진 3번 이미지의 키포인트를 매칭시킨다.  
+7) 이 때 중요한 점은, 3번 프레임과의 매칭점 중, 2번 이미지와 1번 이미지에서 모두 발견된 것을 골라내는 것이 중요하다. 그래야만 3D 포인트를 사용할 수 있다. 여기서는 unordered_map을 이용하여 query, train index 정보를 키값으로 저장하여, 이미 저장된 값이 있다면 이전 프레임과 연결되어 있는 것으로 판단하여 그때의 3D 포인트 값과, 3번 이미지에서의 2D값을 저장하여 반환한다.  
+8) 이렇게 구해진 3D값과 2D 값을 이용하여 solvePnPRANSAC을 수행한다.  
+9) R|t가 구해지면 projection을 수행한다.  
+10) optimization을 수행한다.  
+11) 최적화된 R|t가 구해지면 reprojection을 수행하여 결과를 비교한다.  
+  
+여기까지가 수행한 단계인데, 결과가 좋지 못한 것 같다. 무엇이 문제일까?

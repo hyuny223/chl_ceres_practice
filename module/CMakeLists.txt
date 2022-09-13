@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(MODULE_SOURCE_FILES
         src/compute.cpp
         src/optimization.cpp
+        src/type.cpp
         )
 
 find_package(OpenCV 4.5.5 REQUIRED)
