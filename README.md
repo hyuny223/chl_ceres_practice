@@ -59,10 +59,11 @@ Three Views를 통해서 Optimization해보라는 의견에 구현을 하려고 
 
 ## 22.09.13
 [ before optimization ]
-![image](https://user-images.githubusercontent.com/58837749/189782596-36041386-7621-4ae2-9247-870ba448efa9.png)  
+![image](https://user-images.githubusercontent.com/58837749/189786612-9d0ebe97-57bb-4604-a25c-a1194433a4b2.png)  
 
 [ after optimization ]
-![image](https://user-images.githubusercontent.com/58837749/189782701-5f195eba-202f-4a4c-83cd-e257d3621aab.png)  
+![image](https://user-images.githubusercontent.com/58837749/189786647-89d151a4-70de-4877-90eb-5d438b781fe0.png)  
+  
 
 이번에 사용한 방식은 solvePnPRANSAC이다.  
 1) 1번, 2번 이미지에서 SIFT를 이용하여 코너를 검출하고, 매칭을 시행한다.  
@@ -77,7 +78,7 @@ Three Views를 통해서 Optimization해보라는 의견에 구현을 하려고 
 10) optimization을 수행한다.  
 11) 최적화된 R|t가 구해지면 reprojection을 수행하여 결과를 비교한다.  
   
-여기까지가 수행한 단계인데, 결과가 좋지 못한 것 같다. 무엇이 문제일까? 분명히 최적화를 방해하는 outliers가 존재하는 것 같은데, 예를 들어 최적화 전 projection의 결과에 마이너스 값이 나오면 필터링 해주는 것이 맞을까? solvepnp가 정확하다는 가정 아래, 마이너스 값이 나오면 안 된다.
+여기까지가 수행한 단계인데, 결과가 좋지 못한 것 같다(참고로 가우시안 블러를 사용하면 결과가 더욱 좋지 않다). 무엇이 문제일까? 분명히 최적화를 방해하는 outliers가 존재하는 것 같은데, 예를 들어 최적화 전 projection의 결과에 마이너스 값이 나오면 필터링 해주는 것이 맞을까? solvepnp가 정확하다는 가정 아래, 마이너스 값이 나오면 안 된다.
 
 아래는 9번 과정의 결과이다.  
 ```bash
