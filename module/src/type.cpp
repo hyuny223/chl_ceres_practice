@@ -199,7 +199,7 @@ void makeFramePointInFrame(type::Frame *frame1,
 		{
 			prev_point = 0;
 		}
-		frame2->createFramePoint(idx2[i], -1, good1[i], point_3d[i], prev_point);
+		frame2->createFramePoint(idx2[i], -1, good2[i], point_3d[i], prev_point);
 	}
 }
 
