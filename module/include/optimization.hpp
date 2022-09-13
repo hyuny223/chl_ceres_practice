@@ -6,53 +6,41 @@
 
 #include "opencv2/opencv.hpp"
 
+double k[] = {718.856, 0, 607.1928, 0, 718.856, 185.2157, 0, 0, 1};
+
 struct SnavelyReprojectionError
 {
     SnavelyReprojectionError(double observed_x, double observed_y)
         : observed_x(observed_x), observed_y(observed_y) {}
 
     template <typename T>
-    bool operator()(const T *const camera,
-                    const T *const point,
+    bool operator()(const T *const R,
+                    const T *const t,
+                    const T *const p,
                     T *residuals) const
     {
-        // camera[0,1,2] are the angle-axis rotation.
-        T p[3];
-        ceres::AngleAxisRotatePoint(camera, point, p);
-        // camera[3,4,5] are the translation.
-        p[0] += camera[3];
-        p[1] += camera[4];
-        p[2] += camera[5];
+        T origin_x = T(p[0]);
+        T origin_y = T(p[1]);
+        T origin_z = T(p[2]);
+        T cam_x = R[0] * origin_x + R[1] * origin_y + R[2] * origin_z + t[0];
+        T cam_y = R[3] * origin_x + R[4] * origin_y + R[5] * origin_z + t[1];
+        T cam_z = R[6] * origin_x + R[7] * origin_y + R[8] * origin_z + t[2];
+        T proj_x = (cam_x * k[0] + cam_z * k[2]) / cam_z;
+        T proj_y = (cam_y * k[4] + cam_z * k[5]) / cam_z;
 
-        // Compute the center of distortion. The sign change comes from
-        // the camera model that Noah Snavely's Bundler assumes, whereby
-        // the camera coordinate system has a negative z axis.
-        T xp = -p[0] / p[2];
-        T yp = -p[1] / p[2];
+        T diff_x = proj_x - T(observed_x);
+        T diff_y = proj_y - T(observed_y);
 
-        // Apply second and fourth order radial distortion.
-        const T &l1 = camera[7];
-        const T &l2 = camera[8];
-        T r2 = xp * xp + yp * yp;
-        T distortion = 1.0 + r2 * (l1 + l2 * r2);
+        residuals[0] = diff_x * diff_x;
+        residuals[1] = diff_y * diff_y;
 
-        // Compute final projected point position.
-        const T &focal = camera[6];
-        T predicted_x = focal * distortion * xp;
-        T predicted_y = focal * distortion * yp;
-
-        // The error is the difference between the predicted and observed position.
-        residuals[0] = predicted_x - T(observed_x);
-        residuals[1] = predicted_y - T(observed_y);
         return true;
     }
 
-    // Factory to hide the construction of the CostFunction object from
-    // the client code.
     static ceres::CostFunction *Create(const double observed_x,
                                        const double observed_y)
     {
-        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
+        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 1, 9, 3, 3>(
             new SnavelyReprojectionError(observed_x, observed_y)));
     }
 
@@ -60,7 +48,10 @@ struct SnavelyReprojectionError
     double observed_y;
 };
 
-auto optimization(const cv::Mat &r_mat, const cv::Mat &t_mat, const std::vector<cv::Point2d> &point_2d, const std::vector<cv::Point3d> &point_3d)
+auto optimization(const cv::Mat &r_mat,
+                  const cv::Mat &t_mat,
+                  const std::vector<cv::Point2d> &point_2d,
+                  const std::vector<cv::Point3d> &point_3d)
 {
     using ceres::AutoDiffCostFunction;
     using ceres::CostFunction;
@@ -68,36 +59,39 @@ auto optimization(const cv::Mat &r_mat, const cv::Mat &t_mat, const std::vector<
     using ceres::Solve;
     using ceres::Solver;
 
-    cv::Mat rodrigues;
-    cv::Rodrigues(r_mat, rodrigues);
+    double *R = new double[9];
+    double *t = new double[3];
+    double *p = new double[3];
 
-    double *camera = new double[9];
+    R[0] = r_mat.ptr<double>(0)[0];
+    R[1] = r_mat.ptr<double>(0)[1];
+    R[2] = r_mat.ptr<double>(0)[2];
+    R[3] = r_mat.ptr<double>(1)[0];
+    R[4] = r_mat.ptr<double>(1)[1];
+    R[5] = r_mat.ptr<double>(1)[2];
+    R[6] = r_mat.ptr<double>(2)[0];
+    R[7] = r_mat.ptr<double>(2)[1];
+    R[8] = r_mat.ptr<double>(2)[2];
 
-    camera[0] = rodrigues.ptr<double>(0)[0];
-    camera[1] = rodrigues.ptr<double>(1)[0];
-    camera[2] = rodrigues.ptr<double>(2)[0];
-    camera[3] = t_mat.ptr<double>(0)[0];
-    camera[4] = t_mat.ptr<double>(1)[0];
-    camera[5] = t_mat.ptr<double>(2)[0];
-    camera[6] = 718.856;
-    camera[7] = 0;
-    camera[8] = 0;
+    t[0] = t_mat.ptr<double>(0)[0];
+    t[1] = t_mat.ptr<double>(1)[0];
+    t[3] = t_mat.ptr<double>(2)[0];
 
-    double *point = new double[3];
     ceres::Problem problem;
     for (int i = 0; i < point_2d.size(); ++i)
     {
-        point[0] = point_3d[i].x;
-        point[1] = point_3d[i].y;
-        point[2] = point_3d[i].z;
+        p[0] = point_3d.at(i).x;
+        p[1] = point_3d.at(i).y;
+        p[2] = point_3d.at(i).z;
         ceres::CostFunction *cost_function =
             SnavelyReprojectionError::Create(
-                point_2d[i].x,
-                point_2d[i].y);
+                point_2d.at(i).x,
+                point_2d.at(i).y);
         problem.AddResidualBlock(cost_function,
-                                 new ceres::CauchyLoss(0.5),
-                                 camera,
-                                 point);
+                                 new ceres::CauchyLoss(0.01),
+                                 R,
+                                 t,
+                                 p);
     }
 
     ceres::Solver::Options options;
@@ -112,10 +106,9 @@ auto optimization(const cv::Mat &r_mat, const cv::Mat &t_mat, const std::vector<
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.BriefReport() << "\n";
 
-    cv::Mat_<double> new_r(3, 3), new_t(3, 1), new_rod(3, 1);
-    new_rod << camera[0], camera[1], camera[2];
-    new_t << camera[3], camera[4], camera[5];
-    cv::Rodrigues(new_rod, new_r);
+    cv::Mat_<double> new_r(3, 3), new_t(3, 1);
+    new_r << R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7], R[8];
+    new_t << t[0], t[1], t[2];
 
     return std::tuple{new_r, new_t};
 }

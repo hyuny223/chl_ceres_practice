@@ -322,3 +322,45 @@ origin : (1026.696655, 159.377090)
 projec : (461.540669, 198.536671)o
 =================
 ```
+
+문제점 발견 : 모든 포인트가 최적화 되면 좌측으로 쏠리는 현상이 발생했다. 분명히 식의 문제라고 원인 진단을 하고 자세히 살펴보니, 기존 ceres에서 제공하던 템플릿은 x,y,theta일 때 사용하던 템플릿이다. 이 프로젝트는 x,y,z 값을 사용하기에 값이 자꾸 이상하게 나왔던 것. 해당 템플릿을 직접 이미지 좌표로 변환하는 최적화 식 작성(그러나 아래 식은 파라미터가 15개여서 R(9개)값을 rodrigues(3개)로 넘겨줄 필요가 있다).  
+```C++
+struct SnavelyReprojectionError
+{
+    SnavelyReprojectionError(double observed_x, double observed_y)
+        : observed_x(observed_x), observed_y(observed_y) {}
+
+    template <typename T>
+    bool operator()(const T *const R,
+                    const T *const t,
+                    const T *const p,
+                    T *residuals) const
+    {
+        T origin_x = T(p[0]);
+        T origin_y = T(p[1]);
+        T origin_z = T(p[2]);
+        T cam_x = R[0] * origin_x + R[1] * origin_y + R[2] * origin_z + t[0];
+        T cam_y = R[3] * origin_x + R[4] * origin_y + R[5] * origin_z + t[1];
+        T cam_z = R[6] * origin_x + R[7] * origin_y + R[8] * origin_z + t[2];
+        T proj_x = (cam_x * k[0] + cam_z * k[2]) / cam_z;
+        T proj_y = (cam_y * k[4] + cam_z * k[5]) / cam_z;
+
+        T diff_x = proj_x - T(observed_x);
+        T diff_y = proj_y - T(observed_y);
+
+        residuals[0] = diff_x * diff_x;
+        residuals[1] = diff_y * diff_y;
+
+        return true;
+    }
+```
+[ before optimization ]
+![image](https://user-images.githubusercontent.com/58837749/189819778-96235e59-a31a-4456-9610-dcd77d44716d.png)  
+
+[ after optimization ]
+![image](https://user-images.githubusercontent.com/58837749/189819839-79ebde4e-2f26-4605-933c-17764e76f883.png)
+
+실제로 얼마나 최적화된지는 모르겠지만, 수치상으로는 에러 값이 낮아졌다.  
+![image](https://user-images.githubusercontent.com/58837749/189820104-d250b6e2-a65c-4bce-9c93-95e0a5c8e059.png)
+
+이제 다음으로 진행해야 할 부분은, T13, T12를 이용하여 T23을 구하고, T23으로 triangulation을 수행하여 3D 값을 복원한 후, 이를 T31로 곱하여 월드좌표로 만들어주어 FramePoint로 저장만 하면 될 것 같다. 이 과정이 반복되면 Visual Odometry + Pose Optimization까지는 가능할 듯하다.  

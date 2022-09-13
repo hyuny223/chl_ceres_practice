@@ -175,11 +175,13 @@ auto computeTriangulation(const cv::Mat &r_mat, const cv::Mat &t_mat, const auto
 
 auto projection(const cv::Mat &r_mat, const cv::Mat &t_mat, const auto &point_3d)
 {
+    cv::Mat rodrigues;
+    cv::Rodrigues(r_mat, rodrigues);
     cv::Mat_<double> K(3, 3);
     K << 718.856, 0, 607.1928, 0, 718.856, 185.2157, 0, 0, 1;
     std::vector<cv::Point2d> projected;
     cv::Mat dist_coeff;
-    cv::projectPoints(point_3d, r_mat, t_mat, K, dist_coeff, projected);
+    cv::projectPoints(point_3d, rodrigues, t_mat, K, dist_coeff, projected);
 
     return projected;
 }
@@ -205,14 +207,10 @@ auto visualization(const cv::Mat &image2, const auto &good2, const auto &project
     cv::cvtColor(image2, dst, cv::COLOR_GRAY2BGR);
     for (int i = 0; i < good2.size(); ++i)
     {
-        cv::circle(dst, good2[i], 2, cv::Scalar(0, 0, 255), 3);
-    }
-    for (int i = 0; i < projected.size(); ++i)
-    {
+        cv::circle(dst, good2[i], 5, cv::Scalar(0, 0, 255), 3);
         cv::circle(dst, projected[i], 2, cv::Scalar(0, 255, 0), 3);
+        cv::imshow("result", dst);
     }
-
-    cv::imshow("result", dst);
     while (1)
     {
         if (cv::waitKey(0) == 27)
