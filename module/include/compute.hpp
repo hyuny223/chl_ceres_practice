@@ -223,21 +223,37 @@ auto visualization(const cv::Mat &image2, const auto &good2, const auto &project
 }
 
 auto match3d2d(const auto &frame,
-       const auto &idx1,
-       const auto &good2)
+       const auto &idx,
+       const auto &good)
 {
     std::vector<cv::Point3d> point_3d;
     std::vector<cv::Point2d> point_2d;
 
     auto map = frame->getFramePointMap();
-    for (int i = 0; i < idx1.size(); ++i)
+    for (int i = 0; i < idx.size(); ++i)
     {
-        if (map.contains(idx1.at(i)))
+        if (map.contains(idx.at(i)))
         {
-            point_3d.push_back(map[idx1.at(i)].second->m_point_3d);
-            point_2d.push_back(good2.at(i));
+            point_3d.push_back(map[idx.at(i)].second->m_point_3d);
+            point_2d.push_back(good.at(i));
         }
     }
 
     return std::tuple{point_3d, point_2d}; // 이전 프레임에서의 3d값과 현재 프레임에서의 2d 값
+}
+
+auto filterOutlier(const std::vector<cv::Point2d> &origin, const std::vector<cv::Point2d> &proj, const std::vector<cv::Point3d> &p3)
+{
+    std::vector<cv::Point2d> new_o, new_p;
+    std::vector<cv::Point3d> new_3d;
+    for(int i = 0; i < proj.size(); ++i)
+    {
+        if(proj.at(i).x >= 0 && proj.at(i).y >= 0)
+        {
+            new_o.push_back(origin.at(i));
+            new_p.push_back(proj.at(i));
+            new_3d.push_back(p3.at(i));
+        }
+    }
+    return std::tuple{new_o, new_p, new_3d};
 }

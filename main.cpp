@@ -6,6 +6,8 @@
 #include "optimization.hpp"
 #include "type.hpp"
 
+int view = 0;
+
 int main()
 {
     cv::Mat image1 = cv::imread("../resources/begin.png", cv::IMREAD_GRAYSCALE);
@@ -15,7 +17,6 @@ int main()
     // cv::GaussianBlur(image1, image1, cv::Size(3, 3), 1);
     // cv::GaussianBlur(image2, image2, cv::Size(3, 3), 1);
     // cv::GaussianBlur(image3, image3, cv::Size(3, 3), 1);
-    int view = 0;
 
     type::Frame *frame1 = new type::Frame(image1, 0);
     type::Frame *frame2 = new type::Frame(image2, frame1);
@@ -36,22 +37,23 @@ int main()
 
     auto [r_mat13, t_mat13] = computePnP(tmp_3d, point_2d);
     auto projected = projection(r_mat13, t_mat13, tmp_3d);
-    for(int i = 0; i < projected.size(); ++i)
+    auto [new_o, new_p, new_3d] = filterOutlier(point_2d, projected, tmp_3d);
+    for(int i = 0; i < new_o.size(); ++i)
     {
-        std::printf("origin : (%f, %f)\n",good32.at(i).x, good32.at(i).y);
-        std::printf("projec : (%f, %f)\n",projected.at(i).x, projected.at(i).y);
+        std::printf("origin : (%f, %f)\n",new_o.at(i).x, new_o.at(i).y);
+        std::printf("projec : (%f, %f)\n",new_p.at(i).x, new_p.at(i).y);
         std::cout << "=================\n";
     }
-    visualization(image3, good32, projected);
-    auto [new_r, new_t] = optimization(r_mat13, t_mat13, point_2d, tmp_3d);
-    auto op_projected = projection(new_r, new_t, tmp_3d);
-    for(int i = 0; i < projected.size(); ++i)
+    visualization(image3, new_o, new_p);
+    auto [new_r, new_t] = optimization(r_mat13, t_mat13, new_o, new_3d);
+    auto op_projected = projection(new_r, new_t, new_3d);
+    for(int i = 0; i < new_o.size(); ++i)
     {
-        std::printf("origin : (%f, %f)\n",good32.at(i).x, good32.at(i).y);
+        std::printf("origin : (%f, %f)\n",new_o.at(i).x, new_o.at(i).y);
         std::printf("projec : (%f, %f)o\n",op_projected.at(i).x, op_projected.at(i).y);
         std::cout << "=================\n";
     }
-    visualization(image3, good32, op_projected);
+    visualization(image3, new_o, op_projected);
 
 
 

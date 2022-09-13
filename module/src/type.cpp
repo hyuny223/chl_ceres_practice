@@ -61,17 +61,17 @@ namespace type
 												 this);
 		if (prev)
 		{
-			// ds connect the framepoints
+			// connect the framepoints
 			frame_point->setPrevious(prev);
 		}
 		else
 		{
-			// ds this point has no predecessor
+			// this point has no predecessor
 			frame_point->setOrigin(frame_point);
 		}
 
 		mm_frame_point[idx] = std::make_pair(target, frame_point);
-		// mv_frame_point.push_back(frame_point);
+		// mv_frame_point.push_back(frame_point); // 지울 예정
 		++size;
 
 		return frame_point;
@@ -91,7 +91,7 @@ namespace type
 
 };
 
-#if 0
+#if 0 // 지울 예정 
 void makeFramePointInFrame(type::Frame *frame1,
 						   const std::vector<int> &idx1,
 						   const std::vector<cv::Point2d> &good1,

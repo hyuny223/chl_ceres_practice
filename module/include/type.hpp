@@ -66,8 +66,8 @@ namespace type
     {
     protected:
         cv::Mat m_image;
-        std::unordered_map<int, std::pair<int, type::FramePoint *>> mm_frame_point; // right, gt / framepoint
-        std::vector<FramePoint *> mv_frame_point;
+        std::unordered_map<int, std::pair<int, type::FramePoint *>> mm_frame_point;
+        std::vector<FramePoint *> mv_frame_point; // 지울 예정
 
     public:
         Frame(const cv::Mat &image, Frame *previous);
@@ -77,7 +77,7 @@ namespace type
                                      const cv::Point3d &point_3d,
                                      FramePoint *prev = 0);
         cv::Mat &getImage();
-        std::vector<FramePoint *> &getFramePointVector();
+        std::vector<FramePoint *> &getFramePointVector(); // 지울 예정 
         std::unordered_map<int, std::pair<int, type::FramePoint *>> &getFramePointMap();
         void setPrevious(Frame *previous);
         const Frame *origin() const { return m_origin; }
@@ -99,7 +99,6 @@ void makeFramePointInFrame(type::Frame *frame1,
                            const std::vector<int> &idx2,
                            const std::vector<cv::Point2d> &good2,
                            const std::vector<cv::Point3d> &point_3d);
-
 
 auto prevCheck(const std::unordered_map<int, std::pair<int, type::FramePoint *>> &vec, const int &idx)
 {
